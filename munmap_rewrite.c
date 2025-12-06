@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h> 
@@ -20,7 +21,7 @@ int main(){
 	A primer on Mmap chunks in GLibC
         ==================================
         In GLibC, there is a point where an allocation is so large that malloc
-        decides that we need a seperate section of memory for it, instead 
+        decides that we need a separate section of memory for it, instead 
         of allocating it on the normal heap. This is determined by 
 	the mmap_threshold. 
 
@@ -37,7 +38,7 @@ int main(){
 
         Mmap chunks have a prev_size and a size. The *size* represents the current 
         size of the chunk. The *prev_size* of a chunk represents the left over space
-        from the size of the Mmap chunk (not the chunks directly belows size). 
+        from the size of the Mmap chunk (not the chunks directly below size). 
         However, the fd and bk pointers are not used, as Mmap chunks do not go back 
         into bins, as most heap chunks in GLibC Malloc do. Upon freeing, the size of 
         the chunk must be page-aligned.
@@ -48,17 +49,17 @@ int main(){
 
         A primer on Symbol Lookup in GLibC
         ======================================
-        There is some black magic that is constantly happpening that we do not even 
+        There is some black magic that is constantly happening that we do not even 
         realize! When we include functions (from a library) this is loaded into 
         its own object file and there is just a reference to some function that our 
-        program does not even know about! Printf is not written within our executable.
-        its written with GLibC. So, why? 
+        program does not even know about! printf is not written within our executable.
+        It's written with GLibC. So, why? 
 
         Including EVERY function/symbol from GLibC into our little program would 
        	be terribly inefficient. Our little C program does not use EVERY single 
         function in LibC. Additionally, several other programs are likely to use GLibC
         throughout the execution of our program. So, the main goal of this dynamic symbol 
-        table lookup is to shrink the size of an executable and promote reuseability. 
+        table lookup is to shrink the size of an executable and promote re-usability. 
         But how does this work? 
         
         There are two major parts to this:
@@ -114,27 +115,24 @@ int main(){
 
         The most stunning part of this attack is that it DOES NOT require ANY memory leaks. 
         ASLR does not affect this exploitation at all because the large malloc allocation 
-	is directly under LibC everytime. Additionally, no pointers need to be overwritten
+	is directly under LibC every time. Additionally, no pointers need to be overwritten
 	for this attack to work.
 
 
         This attack is based upon the Qmail attack is based upon the idea at
-        https://www.qualys.com/2020/05/19/cve-2005-1513/remote-code-execution-qmail.txt. 
+        https://lwn.net/Articles/820969.
         Although they do not explain the exploitation process in full, they mention 
         this interesting technique that I thought should be more thoroughly explained. 
 
 	*/
 
 	clearenv(); // Need to not crash once the shell is popped on a different system
-	int d; 
 	while(1){
 		printf("Press enter to continue: \n"); 
 		if(getchar() == '\n'){
 			break;
 		}
 	}
-
-	int* ptr1 = malloc(0x10); 
 
 	printf("Extremely large chunks are special because they are allocated in their own mmaped section\n");
 	printf("of memory, instead of being put onto the normal heap.\n");
@@ -213,7 +211,7 @@ int main(){
 
 	/*
 	Allocate a very large chunk with malloc. This needs to be larger than 
-	the previously freed chunk because the mmapthreshold has increased. 
+	the previously freed chunk because the mmap threshold has increased. 
 	If the allocation is not larger than the size of the largest freed mmap 
 	chunk then the allocation will happen in the normal section of heap memory.
 	*/	
@@ -226,7 +224,6 @@ int main(){
 	printf("\n\nStart overwritting process of .gnu.hash and .dynsym sections\n");
 	printf("=============================================================\n");
 	// Distance between .dynsym base and exit symbol table entry
-	int libc_exit_dynsym = 0xc00; // In amount of bytes
 	int libc_system_offset = 0x0459e7; // Offset from LibC base to system
 
 	/*
